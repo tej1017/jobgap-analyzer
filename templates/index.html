@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Job Tracker with Skill Gap Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black text-white font-sans min-h-screen">
+  <header class="bg-gray-900 text-white p-6 shadow-md text-center">
+    <h1 class="text-3xl font-bold">Job Tracker with Skill Gap Analyzer</h1>
+    <p class="text-gray-400 mt-1">Find jobs tailored to your interests & discover skills to boost your career</p>
+  </header>
+
+  <main class="max-w-5xl mx-auto py-8 px-4">
+    <!-- Input Section -->
+    <section class="bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+      <div class="mb-4">
+        <label for="interests-input" class="block text-sm font-semibold mb-1">Your Job Interests (comma separated)</label>
+        <input type="text" id="interests-input" placeholder="e.g. Python, Data Science, DevOps" 
+               class="w-full p-2 rounded-md border border-gray-600 bg-gray-900 text-white placeholder-gray-500"/>
+      </div>
+      <div class="mb-4">
+        <label for="skills-input" class="block text-sm font-semibold mb-1">Your Current Skills (comma separated)</label>
+        <input type="text" id="skills-input" placeholder="e.g. Python, React, AWS"
+               class="w-full p-2 rounded-md border border-gray-600 bg-gray-900 text-white placeholder-gray-500"/>
+      </div>
+      <button id="analyze-btn" class="bg-white text-black font-semibold py-2 px-6 rounded hover:bg-gray-300 transition">Analyze Jobs & Skills</button>
+    </section>
+
+    <!-- Job Listings -->
+    <section class="mb-8">
+      <h2 class="text-2xl font-bold border-b border-gray-600 pb-2 mb-4">Job Listings</h2>
+      <div id="jobs-list" class="space-y-4">
+        <p class="text-gray-400">Enter your interests and skills above and click "Analyze Jobs & Skills" to see job matches!</p>
+      </div>
+    </section>
+
+    <!-- Skill Gap Analysis -->
+    <section>
+      <h2 class="text-2xl font-bold border-b border-gray-600 pb-2 mb-4">Skill Gap Analysis & Learning Suggestions</h2>
+      <div id="skill-gap-area">
+        <p class="mb-2 text-gray-400">Skills you may want to learn to boost your chances:</p>
+        <ul id="skill-gaps-list" class="list-disc list-inside text-red-400 mb-4"></ul>
+        <div id="suggestions-list" class="space-y-4"></div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="text-center text-gray-500 text-sm py-4 border-t border-gray-700">
+    © 2024 Job Tracker. Powered by Flask & JS. Unique Skill Gap Analysis Feature!
+  </footer>
+
+  <script>
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const jobsList = document.getElementById('jobs-list');
+    const skillGapsList = document.getElementById('skill-gaps-list');
+    const suggestionsList = document.getElementById('suggestions-list');
+
+    function createJobCard(job) {
+      const card = document.createElement('article');
+      card.className = 'bg-gray-900 p-4 rounded-md shadow-md';
+
+      const title = document.createElement('h3');
+      title.className = 'text-xl font-bold text-white';
+      title.textContent = job.title;
+      card.appendChild(title);
+
+      const companyLoc = document.createElement('p');
+      companyLoc.className = 'italic text-gray-400';
+      companyLoc.textContent = `${job.company} — ${job.location}`;
+      card.appendChild(companyLoc);
+
+      const desc = document.createElement('p');
+      desc.className = 'mt-2 text-gray-300';
+      desc.textContent = job.description;
+      card.appendChild(desc);
+
+      const skills = document.createElement('p');
+      skills.className = 'mt-2 font-semibold text-blue-400';
+      skills.textContent = 'Required Skills: ' + job.skills_required.join(', ');
+      card.appendChild(skills);
+
+      return card;
+    }
+
+    function createSuggestionCard(suggestion) {
+      const card = document.createElement('article');
+      card.className = 'bg-gray-800 p-4 rounded-lg shadow-lg';
+
+      const skill = document.createElement('h4');
+      skill.className = 'text-lg font-semibold text-yellow-400';
+      skill.textContent = suggestion.skill;
+      card.appendChild(skill);
+
+      const coursesTitle = document.createElement('p');
+      coursesTitle.className = 'mt-2 font-semibold text-white';
+      coursesTitle.textContent = 'Courses:';
+      card.appendChild(coursesTitle);
+
+      const coursesList = document.createElement('ul');
+      coursesList.className = 'list-disc list-inside text-blue-400';
+      suggestion.courses.forEach(course => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = course.link;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = course.name;
+        a.className = 'hover:underline';
+        li.appendChild(a);
+        coursesList.appendChild(li);
+      });
+      card.appendChild(coursesList);
+
+      const projectsTitle = document.createElement('p');
+      projectsTitle.className = 'mt-3 font-semibold text-white';
+      projectsTitle.textContent = 'Projects:';
+      card.appendChild(projectsTitle);
+
+      const projectsList = document.createElement('ul');
+      projectsList.className = 'list-disc list-inside text-green-400';
+      suggestion.projects.forEach(project => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = project.link;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = project.name;
+        a.className = 'hover:underline';
+        li.appendChild(a);
+        projectsList.appendChild(li);
+      });
+      card.appendChild(projectsList);
+
+      return card;
+    }
+
+    analyzeBtn.addEventListener('click', () => {
+      const interestsRaw = document.getElementById('interests-input').value;
+      const skillsRaw = document.getElementById('skills-input').value;
+      const interests = interestsRaw.split(',').map(s => s.trim()).filter(Boolean);
+      const skills = skillsRaw.split(',').map(s => s.trim()).filter(Boolean);
+
+      if (interests.length === 0) {
+        alert('Please enter at least one job interest.');
+        return;
+      }
+
+      jobsList.innerHTML = '<p class="text-gray-400">Loading job listings...</p>';
+      skillGapsList.innerHTML = '';
+      suggestionsList.innerHTML = '';
+
+      fetch('/api/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ interests, skills })
+      })
+      .then(res => res.json())
+      .then(data => {
+        jobsList.innerHTML = '';
+        if (data.jobs.length === 0) {
+          jobsList.innerHTML = '<p class="text-red-400">No matching jobs found.</p>';
+        } else {
+          data.jobs.forEach(job => {
+            const card = createJobCard(job);
+            jobsList.appendChild(card);
+          });
+        }
+
+        skillGapsList.innerHTML = '';
+        if (data.skill_gaps.length === 0) {
+          skillGapsList.innerHTML = '<li class="text-green-400">None! You have all required skills for these jobs.</li>';
+        } else {
+          data.skill_gaps.forEach(gap => {
+            const li = document.createElement('li');
+            li.className = 'font-semibold text-red-400';
+            li.textContent = gap;
+            skillGapsList.appendChild(li);
+          });
+        }
+
+        suggestionsList.innerHTML = '';
+        if (data.suggestions.length === 0) {
+          suggestionsList.innerHTML = '<p class="text-gray-400">No suggestions available.</p>';
+        } else {
+          data.suggestions.forEach(sug => {
+            const card = createSuggestionCard(sug);
+            suggestionsList.appendChild(card);
+          });
+        }
+      })
+      .catch(err => {
+        jobsList.innerHTML = '<p class="text-red-500">Error loading jobs. Please try again later.</p>';
+        console.error(err);
+      });
+    });
+  </script>
+</body>
+</html>
